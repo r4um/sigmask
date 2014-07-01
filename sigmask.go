@@ -118,6 +118,8 @@ func DecodeSigmask(mask string, nosigname bool) []string {
 
 func Usage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s [flags] pid\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s [flags] proc_status_path\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s [-noname] -mask=MASK\n", os.Args[0])
 	flag.PrintDefaults()
 }
 
@@ -129,21 +131,38 @@ func main() {
 	sigmasks["SigBlk"] = flag.Bool("blocked", false, "Show blocked")
 	sigmasks["SigPnd"] = flag.Bool("pending", false, "Show pending")
 	sigmasks["ShdPnd"] = flag.Bool("shpending", false, "Show shared pending")
-	nosigname := flag.Bool("noname", false, "Do not print signal name")
+
+	var mask string
+	flag.StringVar(&mask, "mask", "", "Decode mask")
+
+	var nosigname bool
+	flag.BoolVar(&nosigname, "noname", false, "Do not print signal name")
 
 	flag.Usage = Usage
 	flag.Parse()
 
+	if mask != "" {
+		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(DecodeSigmask(mask, nosigname), ","))
+		os.Exit(0)
+	}
+
 	args := flag.Args()
 
 	if len(args) < 1 {
-		fmt.Fprintf(os.Stderr, "missing process id\n")
+		fmt.Fprintf(os.Stderr, "missing process id or path to status file\n")
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	pid := args[0]
-	pid_proc_status := fmt.Sprintf("/proc/%s/status", pid)
+	pid_or_path := args[0]
+
+	var pid_proc_status string
+
+	if _, err := os.Stat(pid_or_path); err == nil {
+		pid_proc_status = pid_or_path
+	} else {
+		pid_proc_status = fmt.Sprintf("/proc/%s/status", pid_or_path)
+	}
 
 	file, err := os.Open(pid_proc_status)
 
@@ -173,7 +192,7 @@ func main() {
 
 	for k, v := range sigmasks {
 		if *v {
-			fmt.Fprintf(os.Stdout, "%s %s\n", k, strings.Join(DecodeSigmask(pid_statuses[k], *nosigname), ","))
+			fmt.Fprintf(os.Stdout, "%s %s\n", k, strings.Join(DecodeSigmask(pid_statuses[k], nosigname), ","))
 		}
 	}
 }

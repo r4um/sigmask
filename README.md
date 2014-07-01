@@ -12,10 +12,13 @@ $ go build sigmask.go
 Usage
 
 ```
-$ Usage: ./sigmask [flags] pid
+Usage: ./sigmask [flags] pid
+Usage: ./sigmask [flags] proc_status_path
+Usage: ./sigmask [-noname] -mask=MASK
   -blocked=false: Show blocked
   -caught=false: Show caught
   -ignored=false: Show ignored
+  -mask="": Decode mask
   -noname=false: Do not print signal name
   -pending=false: Show pending
   -shpending=false: Show shared pending
