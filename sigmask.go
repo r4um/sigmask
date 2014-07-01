@@ -127,6 +127,8 @@ func main() {
 	sigmasks["SigCgt"] = flag.Bool("caught", false, "Show caught")
 	sigmasks["SigIgn"] = flag.Bool("ignored", false, "Show ignored")
 	sigmasks["SigBlk"] = flag.Bool("blocked", false, "Show blocked")
+	sigmasks["SigPnd"] = flag.Bool("pending", false, "Show pending")
+	sigmasks["ShdPnd"] = flag.Bool("shpending", false, "Show shared pending")
 	nosigname := flag.Bool("noname", false, "Do not print signal name")
 
 	flag.Usage = Usage
