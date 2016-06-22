@@ -47,6 +47,8 @@ var SIGNAMES = map[int]string{
 	29: "SIGIO",
 	30: "SIGPWR",
 	31: "SIGSYS",
+	32: "SIGRTMIN-2",
+	33: "SIGRTMIN-1",
 	34: "SIGRTMIN",
 	35: "SIGRTMIN+1",
 	36: "SIGRTMIN+2",
