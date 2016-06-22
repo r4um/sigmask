@@ -80,6 +80,28 @@ var SIGNAMES = map[int]string{
 	64: "SIGRTMAX",
 }
 
+func ParseStatuses(r io.Reader) map[string]string {
+	reader := csv.NewReader(r)
+	reader.Comma = ':'
+	reader.FieldsPerRecord = 2
+
+	statusMap := make(map[string]string)
+
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			return nil
+		}
+		statusMap[record[0]] = strings.TrimSpace(record[1])
+	}
+
+	return statusMap
+}
+
 // DecodeSigmask decodes signal mask. See function render_sigset_t in kernel
 // source fs/proc/array.c
 func DecodeSigmask(mask string, nosigname bool) string {
@@ -151,41 +173,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	pidOrPath := args[0]
+	path := args[0]
 
-	var pidProcStatus string
-
-	if _, err := os.Stat(pidOrPath); err == nil {
-		pidProcStatus = pidOrPath
-	} else {
-		pidProcStatus = fmt.Sprintf("/proc/%s/status", pidOrPath)
-	}
-
-	file, err := os.Open(pidProcStatus)
-
+	file, err := os.Open(path)
+	var err2 error
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %s\n", err)
-		return
+		file, err2 = os.Open(fmt.Sprintf("/proc/%s/status", path))
+		if err2 != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\nerror: %s\n", err, err2)
+			os.Exit(1)
+		}
 	}
-
 	defer e.CloseOrExit(file)
 
-	reader := csv.NewReader(file)
-	reader.Comma = ':'
-	reader.FieldsPerRecord = 2
-
-	pidStatuses := make(map[string]string)
-
-	for {
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %s\n", err)
-			return
-		}
-		pidStatuses[record[0]] = strings.TrimSpace(record[1])
-	}
+	statusMap := ParseStatuses(file)
 
 	printAll := true
 	for _, mask := range sigmasks {
@@ -196,7 +197,7 @@ func main() {
 	}
 	for _, mask := range sigmasks {
 		if printAll || *mask.selected {
-			value := DecodeSigmask(pidStatuses[mask.name], nosigname)
+			value := DecodeSigmask(statusMap[mask.name], nosigname)
 			fmt.Printf("%s %s\n", mask.name, value)
 		}
 	}
