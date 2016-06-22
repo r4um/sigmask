@@ -10,7 +10,6 @@ $ go build sigmask.go
 ```
 
 Usage
-
 ```
 Usage: ./sigmask [flags] pid
 Usage: ./sigmask [flags] proc_status_path
@@ -26,10 +25,10 @@ Usage: ./sigmask [-noname] -mask=MASK
 
 Example
 ```
-$ ./sigmask -blocked -caught -ignored -pending -shpending $$
-SigCgt 32,SIGVTALRM,SIGPROF,SIGIO,SIGXFSZ,SIGCONT,SIGALRM,SIGTERM,SIGSEGV,SIGUSR2,SIGPIPE,SIGFPE,SIGKILL,SIGABRT,SIGBUS,SIGTRAP,SIGINT,SIGQUIT
-SigIgn SIGTTOU,SIGURG,SIGTTIN,SIGSTKFLT,SIGILL
-SigBlk SIGCONT
+$ ./sigmask $$
 SigPnd
 ShdPnd
+SigBlk SIGCHLD
+SigIgn SIGQUIT,SIGTSTP,SIGTTIN,SIGTTOU
+SigCgt SIGHUP,SIGINT,SIGILL,SIGTRAP,SIGABRT,SIGBUS,SIGFPE,SIGUSR1,SIGSEGV,SIGUSR2,SIGPIPE,SIGALRM,SIGTERM,SIGCHLD,SIGXCPU,SIGXFSZ,SIGVTALRM,SIGWINCH,SIGSYS
 ```
