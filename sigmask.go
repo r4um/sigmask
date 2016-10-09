@@ -5,12 +5,15 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/orivej/e"
 )
 
-// Generated from
+// SIGNAMES Generated from
 // kill -l | tr "\t" "\n" | ruby -ne '$_.scan(/(\d+)\) (.*)/) {|f,k| puts "#{f}:\"#{k}\"," }'
 var SIGNAMES = map[int]string{
 	1:  "SIGHUP",
@@ -44,6 +47,8 @@ var SIGNAMES = map[int]string{
 	29: "SIGIO",
 	30: "SIGPWR",
 	31: "SIGSYS",
+	32: "SIGRTMIN-2",
+	33: "SIGRTMIN-1",
 	34: "SIGRTMIN",
 	35: "SIGRTMIN+1",
 	36: "SIGRTMIN+2",
@@ -77,43 +82,51 @@ var SIGNAMES = map[int]string{
 	64: "SIGRTMAX",
 }
 
-// Decode signal mask. See function render_sigset_t in kernel source fs/proc/array.c
-func DecodeSigmask(mask string, nosigname bool) []string {
-	bm := map[int]int{1: 1, 2: 2, 4: 3, 8: 4}
-	signals := make([]string, 0)
+func ParseStatuses(r io.Reader) map[string]string {
+	reader := csv.NewReader(r)
+	reader.Comma = ':'
+	reader.FieldsPerRecord = 2
 
-	//echo "#include <signal.h>" | gcc -dM -E -  | grep define._NSIG
-	_NSIG := 65
+	statusMap := make(map[string]string)
 
-	pos := 1
-
-	for _, m := range strings.Split(mask, "") {
-		m_int, e := strconv.ParseInt(m, 16, 0)
-
-		if e != nil {
-			fmt.Fprintf(os.Stderr, "unable to convert mask %s entry to int\n", m)
-			os.Exit(2)
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
 		}
-
-		i := _NSIG - pos*4
-
-		for k, _ := range bm {
-			if m_int&int64(k) == int64(k) {
-				sig := i + bm[k]
-				if nosigname {
-					signals = append(signals, strconv.Itoa(sig))
-				} else {
-					if name, ok := SIGNAMES[sig]; ok {
-						signals = append(signals, name)
-					} else {
-						signals = append(signals, strconv.Itoa(sig))
-					}
-				}
-			}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			return nil
 		}
-		pos = pos + 1
+		statusMap[record[0]] = strings.TrimSpace(record[1])
 	}
-	return signals
+
+	return statusMap
+}
+
+// DecodeSigmask decodes signal mask. See function render_sigset_t in kernel
+// source fs/proc/array.c
+func DecodeSigmask(mask string, nosigname bool) string {
+	var n big.Int
+
+	_, ok := n.SetString(mask, 16)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "unable to parse hex mask entry %s\n", mask)
+		os.Exit(2)
+	}
+
+	var signals []string
+
+	for i := 0; i < n.BitLen(); i++ {
+		if n.Bit(i) == 1 {
+			name, ok := SIGNAMES[i+1]
+			if nosigname || !ok {
+				name = strconv.Itoa(i + 1)
+			}
+			signals = append(signals, name)
+		}
+	}
+	return strings.Join(signals, ",")
 }
 
 func Usage() {
@@ -124,13 +137,16 @@ func Usage() {
 }
 
 func main() {
-	sigmasks := make(map[string]*bool)
-
-	sigmasks["SigCgt"] = flag.Bool("caught", false, "Show caught")
-	sigmasks["SigIgn"] = flag.Bool("ignored", false, "Show ignored")
-	sigmasks["SigBlk"] = flag.Bool("blocked", false, "Show blocked")
-	sigmasks["SigPnd"] = flag.Bool("pending", false, "Show pending")
-	sigmasks["ShdPnd"] = flag.Bool("shpending", false, "Show shared pending")
+	sigmasks := []struct {
+		name     string
+		selected *bool
+	}{
+		{"SigPnd", flag.Bool("pending", false, "Show pending")},
+		{"ShdPnd", flag.Bool("shpending", false, "Show shared pending")},
+		{"SigBlk", flag.Bool("blocked", false, "Show blocked")},
+		{"SigIgn", flag.Bool("ignored", false, "Show ignored")},
+		{"SigCgt", flag.Bool("caught", false, "Show caught")},
+	}
 
 	var mask string
 	flag.StringVar(&mask, "mask", "", "Decode mask")
@@ -142,7 +158,7 @@ func main() {
 	flag.Parse()
 
 	if mask != "" {
-		fmt.Fprintf(os.Stdout, "%s\n", strings.Join(DecodeSigmask(mask, nosigname), ","))
+		fmt.Println(DecodeSigmask(mask, nosigname))
 		os.Exit(0)
 	}
 
@@ -153,46 +169,38 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-
-	pid_or_path := args[0]
-
-	var pid_proc_status string
-
-	if _, err := os.Stat(pid_or_path); err == nil {
-		pid_proc_status = pid_or_path
-	} else {
-		pid_proc_status = fmt.Sprintf("/proc/%s/status", pid_or_path)
+	if len(args) > 1 {
+		fmt.Fprintf(os.Stderr, "unexpected arguments: %v", args[1:])
+		flag.Usage()
+		os.Exit(1)
 	}
 
-	file, err := os.Open(pid_proc_status)
+	path := args[0]
 
+	file, err := os.Open(path)
+	var err2 error
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %s\n", err)
-		return
-	}
-
-	defer file.Close()
-
-	reader := csv.NewReader(file)
-	reader.Comma = ':'
-	reader.FieldsPerRecord = 2
-
-	pid_statuses := make(map[string]string)
-
-	for {
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %s\n", err)
-			return
+		file, err2 = os.Open(fmt.Sprintf("/proc/%s/status", path))
+		if err2 != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\nerror: %s\n", err, err2)
+			os.Exit(1)
 		}
-		pid_statuses[record[0]] = strings.TrimSpace(record[1])
 	}
+	defer e.CloseOrExit(file)
 
-	for k, v := range sigmasks {
-		if *v {
-			fmt.Fprintf(os.Stdout, "%s %s\n", k, strings.Join(DecodeSigmask(pid_statuses[k], nosigname), ","))
+	statusMap := ParseStatuses(file)
+
+	printAll := true
+	for _, mask := range sigmasks {
+		if *mask.selected {
+			printAll = false
+			break
+		}
+	}
+	for _, mask := range sigmasks {
+		if printAll || *mask.selected {
+			value := DecodeSigmask(statusMap[mask.name], nosigname)
+			fmt.Printf("%s %s\n", mask.name, value)
 		}
 	}
 }
