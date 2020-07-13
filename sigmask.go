@@ -85,7 +85,7 @@ var SIGNAMES = map[int]string{
 func ParseStatuses(r io.Reader) map[string]string {
 	reader := csv.NewReader(r)
 	reader.Comma = ':'
-	reader.FieldsPerRecord = 2
+	reader.FieldsPerRecord = -1
 
 	statusMap := make(map[string]string)
 

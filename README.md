@@ -4,9 +4,11 @@ sigmask
 Decode and print process signal masks, given a process id on Linux.
 Decodes signal masks (SigCgt, SigIgn, SigBlk, ShdPnd, SigPnd) in `/proc/PID/status`
 
-To build
+To install/build and run.
+
 ```
-$ go build sigmask.go
+$ go get -v github.com/r4um/sigmask
+$ ${GOPATH:=~/go}/bin/sigmask
 ```
 
 Usage
