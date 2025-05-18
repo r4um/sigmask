@@ -9,8 +9,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/orivej/e"
 )
 
 // SIGNAMES Generated from
@@ -184,9 +182,12 @@ func main() {
 		if err2 != nil {
 			fmt.Fprintf(os.Stderr, "error: %s\nerror: %s\n", err, err2)
 			os.Exit(1)
+		} else {
+			defer file.Close()
 		}
+	} else {
+		defer file.Close()
 	}
-	defer e.CloseOrExit(file)
 
 	statusMap := ParseStatuses(file)
 
@@ -200,7 +201,7 @@ func main() {
 	for _, mask := range sigmasks {
 		if printAll || *mask.selected {
 			value := DecodeSigmask(statusMap[mask.name], nosigname)
-			fmt.Printf("%s %s\n", mask.name, value)
+			fmt.Printf("%s %s %s\n", mask.name, statusMap[mask.name], value)
 		}
 	}
 }
