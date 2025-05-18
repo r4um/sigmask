@@ -7,30 +7,51 @@ Decodes signal masks (SigCgt, SigIgn, SigBlk, ShdPnd, SigPnd) in `/proc/PID/stat
 To install/build and run.
 
 ```
-$ go get -v github.com/r4um/sigmask
+$ go install -v github.com/r4um/sigmask
 $ ${GOPATH:=~/go}/bin/sigmask
 ```
 
 Usage
 ```
-Usage: ./sigmask [flags] pid
-Usage: ./sigmask [flags] proc_status_path
-Usage: ./sigmask [-noname] -mask=MASK
-  -blocked=false: Show blocked
-  -caught=false: Show caught
-  -ignored=false: Show ignored
-  -mask="": Decode mask
-  -noname=false: Do not print signal name
-  -pending=false: Show pending
-  -shpending=false: Show shared pending
+$ sigmask
+missing process id or path to status file
+Usage: sigmask [flags] pid
+Usage: sigmask [flags] proc_status_path
+Usage: sigmask [-noname] -mask=MASK
+  -blocked
+        Show blocked
+  -caught
+        Show caught
+  -ignored
+        Show ignored
+  -mask string
+        Decode mask
+  -noname
+        Do not print signal name
+  -pending
+        Show pending
+  -shpending
+        Show shared pending
 ```
 
-Example
+Examples
 ```
-$ ./sigmask $$
+$ sigmask $$
 SigPnd
 ShdPnd
 SigBlk SIGCHLD
 SigIgn SIGQUIT,SIGTSTP,SIGTTIN,SIGTTOU
 SigCgt SIGHUP,SIGINT,SIGILL,SIGTRAP,SIGABRT,SIGBUS,SIGFPE,SIGUSR1,SIGSEGV,SIGUSR2,SIGPIPE,SIGALRM,SIGTERM,SIGCHLD,SIGXCPU,SIGXFSZ,SIGVTALRM,SIGWINCH,SIGSYS
+$ sigmask 1
+SigPnd
+ShdPnd
+SigBlk SIGHUP,SIGINT,SIGUSR1,SIGUSR2,SIGTERM,SIGCHLD,SIGWINCH,SIGPWR,SIGRTMIN,SIGRTMIN+1,SIGRTMIN+2,SIGRTMIN+3,SIGRTMIN+4,SIGRTMIN+5,SIGRTMIN+6,SIGRTMIN+7,SIGRTMIN+13,SIGRTMIN+14,SIGRTMIN+15,SIGRTMAX-14,SIGRTMAX-13,SIGRTMAX-12,SIGRTMAX-10,SIGRTMAX-9,SIGRTMAX-8,SIGRTMAX-7,SIGRTMAX-6,SIGRTMAX-5,SIGRTMAX-4,SIGRTMAX-3,SIGRTMAX-2,SIGRTMAX-1
+SigIgn SIGPIPE
+SigCgt SIGQUIT,SIGILL,SIGABRT,SIGBUS,SIGFPE,SIGSEGV
+$ sigmask /proc/25/status
+SigPnd
+ShdPnd
+SigBlk
+SigIgn SIGHUP,SIGINT,SIGQUIT,SIGILL,SIGTRAP,SIGABRT,SIGBUS,SIGFPE,SIGKILL,SIGUSR1,SIGSEGV,SIGUSR2,SIGPIPE,SIGALRM,SIGTERM,SIGSTKFLT,SIGCHLD,SIGCONT,SIGSTOP,SIGTSTP,SIGTTIN,SIGTTOU,SIGURG,SIGXCPU,SIGXFSZ,SIGVTALRM,SIGPROF,SIGWINCH,SIGIO,SIGPWR,SIGSYS,SIGRTMIN-2,SIGRTMIN-1,SIGRTMIN,SIGRTMIN+1,SIGRTMIN+2,SIGRTMIN+3,SIGRTMIN+4,SIGRTMIN+5,SIGRTMIN+6,SIGRTMIN+7,SIGRTMIN+8,SIGRTMIN+9,SIGRTMIN+10,SIGRTMIN+11,SIGRTMIN+12,SIGRTMIN+13,SIGRTMIN+14,SIGRTMIN+15,SIGRTMAX-14,SIGRTMAX-13,SIGRTMAX-12,SIGRTMAX-11,SIGRTMAX-10,SIGRTMAX-9,SIGRTMAX-8,SIGRTMAX-7,SIGRTMAX-6,SIGRTMAX-5,SIGRTMAX-4,SIGRTMAX-3,SIGRTMAX-2,SIGRTMAX-1,SIGRTMAX
+SigCgt
 ```
