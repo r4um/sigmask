@@ -1,0 +1,14 @@
+Name:	bash:worker
+Umask:	0022
+State:	S (sleeping)
+Tgid:	4242
+Pid:	4242
+PPid:	1
+Threads:	1
+SigQ:	0/63429
+SigPnd:	0000000000000000
+ShdPnd:	0000000000000000
+SigBlk:	0000000000010000
+SigIgn:	0000000000384004
+SigCgt:	000000004b813efb
+CapInh:	0000000000000000

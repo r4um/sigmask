@@ -1,0 +1,78 @@
+// Numbering follows the generic Linux ABI (x86, arm, aarch64, riscv, ...).
+// Alpha, MIPS, PA-RISC and SPARC number some signals differently.
+const NAMES: [&str; 64] = [
+    "SIGHUP",
+    "SIGINT",
+    "SIGQUIT",
+    "SIGILL",
+    "SIGTRAP",
+    "SIGABRT",
+    "SIGBUS",
+    "SIGFPE",
+    "SIGKILL",
+    "SIGUSR1",
+    "SIGSEGV",
+    "SIGUSR2",
+    "SIGPIPE",
+    "SIGALRM",
+    "SIGTERM",
+    "SIGSTKFLT",
+    "SIGCHLD",
+    "SIGCONT",
+    "SIGSTOP",
+    "SIGTSTP",
+    "SIGTTIN",
+    "SIGTTOU",
+    "SIGURG",
+    "SIGXCPU",
+    "SIGXFSZ",
+    "SIGVTALRM",
+    "SIGPROF",
+    "SIGWINCH",
+    "SIGIO",
+    "SIGPWR",
+    "SIGSYS",
+    "SIGRTMIN-2",
+    "SIGRTMIN-1",
+    "SIGRTMIN",
+    "SIGRTMIN+1",
+    "SIGRTMIN+2",
+    "SIGRTMIN+3",
+    "SIGRTMIN+4",
+    "SIGRTMIN+5",
+    "SIGRTMIN+6",
+    "SIGRTMIN+7",
+    "SIGRTMIN+8",
+    "SIGRTMIN+9",
+    "SIGRTMIN+10",
+    "SIGRTMIN+11",
+    "SIGRTMIN+12",
+    "SIGRTMIN+13",
+    "SIGRTMIN+14",
+    "SIGRTMIN+15",
+    "SIGRTMAX-14",
+    "SIGRTMAX-13",
+    "SIGRTMAX-12",
+    "SIGRTMAX-11",
+    "SIGRTMAX-10",
+    "SIGRTMAX-9",
+    "SIGRTMAX-8",
+    "SIGRTMAX-7",
+    "SIGRTMAX-6",
+    "SIGRTMAX-5",
+    "SIGRTMAX-4",
+    "SIGRTMAX-3",
+    "SIGRTMAX-2",
+    "SIGRTMAX-1",
+    "SIGRTMAX",
+];
+
+/// Returns the conventional name of signal `signo` (1-based), e.g. `SIGTERM` for 15.
+///
+/// Returns `None` for 0 and for numbers above 64.
+#[must_use]
+pub fn signal_name(signo: u32) -> Option<&'static str> {
+    // Signal numbers are 1-based; signal 0 does not exist.
+    let index = usize::try_from(signo).ok()?.checked_sub(1)?;
+    NAMES.get(index).copied()
+}
