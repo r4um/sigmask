@@ -19,7 +19,7 @@ jobs:
       - name: Tag matches Cargo.toml version
         run: |
           version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "sigmask") | .version')
-          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+          if [ "${version}" != "${GITHUB_REF_NAME}" ]; then
             echo "::error::tag ${GITHUB_REF_NAME} does not match Cargo.toml version ${version}"
             exit 1
           fi
